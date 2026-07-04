@@ -1,0 +1,250 @@
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { generateSessionQuestions } from '../../data/questionBank';
+import { narrate, stopNarration } from '../../hooks/useAudio';
+import QuestionRenderer from '../quiz/QuestionRenderer';
+
+const WORLDS = [
+  { id: 0, name: 'Starter Zone',    icon: '🛤️', color: '#ff4081', desc: 'Questions 1–5' },
+  { id: 1, name: 'City Streets',    icon: '🏙️', color: '#4caf50', desc: 'Questions 6–10' },
+  { id: 2, name: 'Window World',    icon: '🪟', color: '#03a9f4', desc: 'Questions 11–15' }
+];
+
+function calcXP(attempt, streak) {
+  const base = attempt === 1 ? 10 : 5;
+  return base + (streak >= 5 ? 5 : 0);
+}
+
+function calcStars(correct, total) {
+  const pct = correct / total;
+  if (pct >= 0.9) return 3;
+  if (pct >= 0.7) return 2;
+  if (pct >= 0.5) return 1;
+  return 0;
+}
+
+export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
+  const [currentWorld, setCurrentWorld] = useState(-1);
+  const [worldResults, setWorldResults] = useState({});
+  const [qIndex, setQIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [totalXP, setTotalXP] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [feedback, setFeedback] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [xpPopup, setXpPopup] = useState(null);
+  const [worldComplete, setWorldComplete] = useState(false);
+  const [worldQuestions, setWorldQuestions] = useState([]);
+  // Generate all questions once so they don't repeat across worlds.
+  const allQuestionsRef = useRef(null);
+  if (!allQuestionsRef.current) {
+    allQuestionsRef.current = generateSessionQuestions();
+  }
+  const narrationRef = useRef(null);
+
+  const q = worldQuestions[qIndex];
+
+  useEffect(() => {
+    if (audioEnabled && q && !worldComplete && !feedback && currentWorld >= 0) {
+      const timer = setTimeout(() => {
+        narrationRef.current = narrate([{ text: q.questionText, style: 'default' }], apiKey);
+      }, 300);
+      return () => {
+        clearTimeout(timer);
+        stopNarration();
+      };
+    }
+  }, [qIndex, audioEnabled, q, worldComplete, feedback, currentWorld, apiKey]);
+
+  const startWorld = useCallback((worldId) => {
+    // Slice the pre-generated question pool by world index to avoid repeats.
+    const allQ = allQuestionsRef.current;
+    const perWorld = Math.ceil(allQ.length / WORLDS.length);
+    const slice = allQ.slice(worldId * perWorld, worldId * perWorld + perWorld);
+    setWorldQuestions(slice);
+    setCurrentWorld(worldId);
+    setQIndex(0); setScore(0); setLives(3); setStreak(0);
+    setWorldComplete(false); setFeedback(null); setAnswered(false);
+    stopNarration();
+    if (audioEnabled) {
+      narrationRef.current = narrate([{ text: `Welcome to ${WORLDS[worldId].name}! Let's go!`, style: 'cheer' }], apiKey);
+    }
+  }, [audioEnabled, apiKey]);
+
+  const finishWorld = useCallback(() => {
+    const stars = calcStars(score, worldQuestions.length);
+    setWorldResults(prev => ({ ...prev, [currentWorld]: { score, total: worldQuestions.length, stars } }));
+    setWorldComplete(true);
+    stopNarration();
+    if (audioEnabled) {
+      narrationRef.current = narrate([{ text: `${WORLDS[currentWorld].name} complete! You got ${score} out of ${worldQuestions.length}!`, style: 'cheer' }], apiKey);
+    }
+  }, [currentWorld, score, audioEnabled, worldQuestions.length, apiKey]);
+
+  const backToMap = useCallback(() => {
+    stopNarration();
+    setCurrentWorld(-1); setWorldComplete(false); setFeedback(null);
+  }, []);
+
+  const handleAllComplete = useCallback(() => {
+    stopNarration();
+    const totalScore = Object.values(worldResults).reduce((a, r) => a + r.score, 0) + score;
+    const totalQ = Object.values(worldResults).reduce((a, r) => a + r.total, 0) + (worldQuestions.length || 0);
+    onComplete({
+      score: totalScore, xp: totalXP, maxStreak,
+      totalAnswered: totalQ,
+      worldResults: { ...worldResults, [currentWorld]: { score, total: worldQuestions.length, stars: calcStars(score, worldQuestions.length) } },
+    });
+  }, [worldResults, score, totalXP, maxStreak, worldQuestions, currentWorld, onComplete]);
+
+  const advance = useCallback(() => {
+    setFeedback(null); setAnswered(false);
+    if (qIndex + 1 < worldQuestions.length && lives > 0) {
+      setQIndex(i => i + 1);
+    } else {
+      finishWorld();
+    }
+  }, [qIndex, worldQuestions.length, lives, finishWorld]);
+
+  const handleAnswer = useCallback((isCorrect) => {
+    setAnswered(true);
+    stopNarration();
+    if (isCorrect) {
+      const ns = streak + 1;
+      const earned = calcXP(1, ns);
+      setScore(s => s + 1); setStreak(ns);
+      setMaxStreak(ms => Math.max(ms, ns));
+      setTotalXP(x => x + earned);
+      setXpPopup(`+${earned} XP`);
+      setTimeout(() => setXpPopup(null), 1500);
+      setFeedback({ type: 'correct', message: ns >= 5 ? `🔥 ${ns} Streak!` : 'Correct! 🎉', sub: q.explanation });
+      if (audioEnabled) {
+        narrationRef.current = narrate([{ text: ns >= 5 ? `Amazing! ${ns} in a row!` : 'Correct! Well done!', style: 'cheer' }], apiKey);
+      }
+      setTimeout(advance, 1800);
+    } else {
+      setStreak(0); setLives(l => l - 1);
+      setFeedback({ type: 'wrong', message: 'Not quite!', sub: q.explanation });
+      if (audioEnabled) {
+        narrationRef.current = narrate([{ text: "Not quite! Let us look at the lines again.", style: 'encourage' }], apiKey);
+      }
+      if (lives - 1 <= 0) setTimeout(finishWorld, 2000);
+      else setTimeout(advance, 2000);
+    }
+  }, [streak, q, advance, lives, finishWorld, audioEnabled, apiKey]);
+
+  // World Map View
+  if (currentWorld < 0) {
+    const allDone = WORLDS.every((_, i) => worldResults[i]);
+    return (
+      <div className="play-phase">
+        <div className="play-header">
+          <h2 className="play-title">🎮 Play — Choose Your World!</h2>
+          <p className="play-subtitle">Beat each world to unlock the next one. Earn stars and XP!</p>
+          {totalXP > 0 && <div className="play-xp-badge">⭐ {totalXP} XP</div>}
+        </div>
+        <div className="world-map">
+          {WORLDS.map((w, i) => {
+            const unlocked = i === 0 || worldResults[i - 1];
+            const completed = worldResults[i];
+            return (
+              <div key={w.id} className={`world-card ${unlocked ? 'unlocked' : 'locked'} ${completed ? 'completed' : ''}`}
+                onClick={() => unlocked && startWorld(i)} style={{ '--world-color': w.color }}>
+                {!unlocked && <div className="world-lock">🔒</div>}
+                <div className="world-icon">{w.icon}</div>
+                <div className="world-name">{w.name}</div>
+                <div className="world-desc">{w.desc}</div>
+                {completed && (
+                  <div className="world-stars">
+                    {[1, 2, 3].map(s => (<span key={s} style={{ opacity: s <= completed.stars ? 1 : 0.2 }}>⭐</span>))}
+                    <span className="world-score">{completed.score}/{completed.total}</span>
+                  </div>
+                )}
+                {unlocked && !completed && <div className="world-play-btn">▶ PLAY</div>}
+              </div>
+            );
+          })}
+        </div>
+        {allDone && (
+          <button className="btn btn-green btn-lg" onClick={handleAllComplete} style={{ marginTop: 24, animation: 'bounceIn 0.5s ease' }}>
+            🏆 Complete Challenge!
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // World Complete View
+  if (worldComplete) {
+    const w = WORLDS[currentWorld];
+    const stars = calcStars(score, worldQuestions.length);
+    const isLastWorld = currentWorld === WORLDS.length - 1;
+    return (
+      <div className="play-phase">
+        <div className="world-complete-card">
+          <div className="world-complete-icon">{w.icon}</div>
+          <h2 className="world-complete-title">{w.name} Complete!</h2>
+          <div className="world-complete-score">{score}/{worldQuestions.length}</div>
+          <div className="world-complete-stars">
+            {[1, 2, 3].map(s => (
+              <span key={s} className={`world-star ${s <= stars ? 'earned' : ''}`} style={{ animationDelay: `${s * 0.2}s` }}>⭐</span>
+            ))}
+          </div>
+          <div className="world-complete-xp">⭐ {totalXP} XP earned</div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button className="btn btn-outline btn-sm" onClick={backToMap}>← World Map</button>
+            {isLastWorld ? (
+              <button className="btn btn-green" onClick={handleAllComplete}>🏆 Finish!</button>
+            ) : (
+              <button className="btn btn-primary" onClick={() => {
+                setWorldResults(prev => ({ ...prev, [currentWorld]: { score, total: worldQuestions.length, stars } }));
+                startWorld(currentWorld + 1);
+              }}>Next World →</button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Question View
+  if (!q) return null;
+  const w = WORLDS[currentWorld];
+  const pct = Math.round((qIndex / worldQuestions.length) * 100);
+
+  return (
+    <div className="play-phase">
+      <div className="play-world-badge" style={{ background: w.color }}>{w.icon} {w.name}</div>
+      <div className="hud">
+        <div className="hud-item">⭐ {totalXP}</div>
+        <div className="hearts">
+          {Array.from({ length: 3 }, (_, i) => (<span key={i} style={{ opacity: i < lives ? 1 : 0.2 }}>❤️</span>))}
+        </div>
+        <div className={`hud-item ${streak >= 5 ? 'streak-fire' : ''}`}>🔥 {streak}x</div>
+      </div>
+      <div style={{ width: '100%', maxWidth: 700, marginBottom: 16 }}>
+        <div className="progress-bar-container">
+          <div className="progress-bar-label">
+            <span>Question {qIndex + 1}/{worldQuestions.length}</span>
+            <span>{pct}%</span>
+          </div>
+          <div className="progress-bar-track"><div className="progress-bar-fill" style={{ width: `${pct}%` }} /></div>
+        </div>
+      </div>
+      <div className="question-card" style={{ animation: 'slideUp 0.3s ease' }}>
+        <QuestionRenderer question={q} onAnswer={handleAnswer} disabled={answered} />
+      </div>
+      {xpPopup && <div className="xp-popup">{xpPopup}</div>}
+      {feedback && (
+        <div className="feedback-overlay">
+          <div className={`feedback-content ${feedback.type}`}>
+            <div className="feedback-emoji">{feedback.type === 'correct' ? '🎉' : '😢'}</div>
+            <div className="feedback-message">{feedback.message}</div>
+            <div className="feedback-sub">{feedback.sub}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
