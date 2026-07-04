@@ -56,6 +56,8 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
       if (qIndex + 1 < worldQuestions.length) {
         preloadAudio(worldQuestions[qIndex + 1].questionText, 'default', apiKey);
       }
+    } else if (!audioEnabled && q && currentWorld >= 0) {
+      console.log("[PlayPhase] Audio disabled, skipping question narration.", q.questionText);
     }
   }, [qIndex, audioEnabled, q, worldComplete, feedback, currentWorld, apiKey, worldQuestions]);
 
@@ -70,7 +72,9 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
     setWorldComplete(false); setFeedback(null); setAnswered(false);
     stopNarration();
     if (audioEnabled) {
-      narrationRef.current = narrate([{ text: `Welcome to ${WORLDS[worldId].name}! Let's go!`, style: 'cheer' }], apiKey);
+      narrationRef.current = narrate([{ text: `Welcome to ${WORLDS[worldId].name}! Let\'s go!`, style: 'cheer' }], apiKey);
+    } else if (!audioEnabled) {
+      console.log("[PlayPhase] Audio disabled, skipping welcome narration.");
     }
   }, [audioEnabled, apiKey]);
 
@@ -81,6 +85,8 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
     stopNarration();
     if (audioEnabled) {
       narrationRef.current = narrate([{ text: `${WORLDS[currentWorld].name} complete! You got ${score} out of ${worldQuestions.length}!`, style: 'cheer' }], apiKey);
+    } else if (!audioEnabled) {
+      console.log("[PlayPhase] Audio disabled, skipping world complete narration.");
     }
   }, [currentWorld, score, audioEnabled, worldQuestions.length, apiKey]);
 
@@ -123,6 +129,8 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
       setFeedback({ type: 'correct', message: ns >= 5 ? `🔥 ${ns} Streak!` : 'Correct! 🎉', sub: q.explanation });
       if (audioEnabled) {
         narrationRef.current = narrate([{ text: ns >= 5 ? `Amazing! ${ns} in a row!` : 'Correct! Well done!', style: 'cheer' }], apiKey);
+      } else if (!audioEnabled) {
+        console.log("[PlayPhase] Audio disabled, skipping correct answer narration.");
       }
       setTimeout(advance, 1800);
     } else {
@@ -130,6 +138,8 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
       setFeedback({ type: 'wrong', message: 'Not quite!', sub: q.explanation });
       if (audioEnabled) {
         narrationRef.current = narrate([{ text: "Not quite! Let us look at the lines again.", style: 'encourage' }], apiKey);
+      } else if (!audioEnabled) {
+        console.log("[PlayPhase] Audio disabled, skipping incorrect answer narration.");
       }
       if (lives - 1 <= 0) setTimeout(finishWorld, 2000);
       else setTimeout(advance, 2000);

@@ -29,14 +29,16 @@ let narrationCompletePromise = Promise.resolve();
 let resolveNarrationComplete = () => {};
 
 // When the global audio element finishes playing, resolve the current completion promise.
-if (globalAudio) {
-  globalAudio.onended = () => {
-    resolveNarrationComplete();
-  };
-  globalAudio.onerror = () => {
-    resolveNarrationComplete();
-  };
-}
+  if (globalAudio) {
+    globalAudio.onended = () => {
+      console.log("[globalAudio] Playback ended.");
+      resolveNarrationComplete();
+    };
+    globalAudio.onerror = (e) => {
+      console.error("[globalAudio] Playback error:", e);
+      resolveNarrationComplete();
+    };
+  }
 
 /**
  * stopNarration()
@@ -77,16 +79,21 @@ export function stopNarration() {
 export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0) {
   // 1. Check pre-generated audio map first (zero latency)
   if (audioMap && audioMap[text]) {
+    console.log(`[getAudioUrl] Using pre-generated audio for: "${text}"`);
     return audioMap[text];
   }
 
   // 2. Check in-memory cache for dynamic audio
   const cacheKey = `${text}::${style}`;
   if (elevenLabsCache.has(cacheKey)) {
+    console.log(`[getAudioUrl] Using cached audio for: "${text}"`);
     return elevenLabsCache.get(cacheKey);
   }
 
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn("[getAudioUrl] No API Key provided, cannot fetch dynamic audio.");
+    return null;
+  }
 
   // 3. Fetch from ElevenLabs dynamically
   try {
@@ -94,6 +101,7 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
     const controller = new AbortController();
     pendingRequests.set(`${queueId}-${cacheKey}`, controller);
     
+    console.log(`[getAudioUrl] Fetching audio from ElevenLabs for: "${text}"`);
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/Xb7hH8MSUJpSbSDYk0k2`,
       {
@@ -113,11 +121,15 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
 
     pendingRequests.delete(`${queueId}-${cacheKey}`);
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error("[getAudioUrl] ElevenLabs API error:", response.status, response.statusText);
+      return null;
+    }
 
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     elevenLabsCache.set(cacheKey, url);
+    console.log(`[getAudioUrl] Successfully fetched and cached audio for: "${text}"`);
     return url;
   } catch (e) {
     // Ignore abort errors - they're expected when navigating away
@@ -169,6 +181,7 @@ export async function narrate(segments, apiKey) {
   // If global audio isn't available, we can't narrate.
   if (!globalAudio) {
     console.warn("[narrate] Audio not supported in this environment.");
+    resolveNarrationComplete(); // Resolve the promise to prevent waiting indefinitely in non-audio environments.
     return;
   }
 
