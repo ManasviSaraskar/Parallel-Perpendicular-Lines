@@ -6,7 +6,7 @@ const STORY_SLIDES = [
   {
     image: '/images/story_treehouse.png',
     title: "John's Treehouse",
-    text: "John is building a treehouse! He needs the rungs of his ladder to be perfectly even, and the ladder to stand straight against the tree. Can geometry help him?",
+    text: "John is building a treehouse ladder. He needs the rungs to be evenly spaced, and the side rails to meet the floor at a perfect corner.",
     highlight: '"Lines can be parallel or perpendicular!"',
     mascotText: "Lines are everywhere! 🪜",
     action: say,
@@ -14,7 +14,7 @@ const STORY_SLIDES = [
   {
     image: '/images/story_parallel.png',
     title: "Parallel Lines",
-    text: "Look at the two railway tracks! They run side by side in the same direction and they will NEVER cross — no matter how far they go. Those are called parallel lines!",
+    text: "Look! The two railway tracks never touch. They stay exactly the same distance apart, forever. That is what we call parallel!",
     highlight: '"Same direction, same distance, forever!"',
     mascotText: "They never crash! 🛤️",
     action: emphasize,
@@ -22,7 +22,7 @@ const STORY_SLIDES = [
   {
     image: '/images/story_perpendicular.png',
     title: "Perpendicular Lines",
-    text: "Now look at Yuki's window — the top and side of the frame meet at a perfect square corner. Lines that cross at exactly 90° are called perpendicular lines!",
+    text: "Now look at Yuki's window. The lines cross and make a perfect square corner, a right angle. That is perpendicular!",
     highlight: '"A perfect square corner — 90°!"',
     mascotText: "Like the corner of a book! 📐",
     action: emphasize,
@@ -30,7 +30,7 @@ const STORY_SLIDES = [
   {
     image: '/images/story_intersecting.png',
     title: "Intersecting Lines",
-    text: "Some lines just cross at a slant — they meet, but not at a right angle. These are intersecting lines. They are different from perpendicular lines!",
+    text: "Some lines just cross at a slanted corner. Those are intersecting, but not perpendicular, because there is no right angle.",
     highlight: '"They cross, but not at 90°."',
     mascotText: "Watch out, they cross! ❌",
     action: say,

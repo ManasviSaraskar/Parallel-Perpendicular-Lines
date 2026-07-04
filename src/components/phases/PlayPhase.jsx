@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { generateSessionQuestions } from '../../data/questionBank';
-import { narrate, stopNarration } from '../../hooks/useAudio';
+import { narrate, stopNarration, preloadAudio } from '../../hooks/useAudio';
 import QuestionRenderer from '../quiz/QuestionRenderer';
 
 const WORLDS = [
@@ -45,17 +45,19 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
 
   const q = worldQuestions[qIndex];
 
+  // Unmount cleanup
+  useEffect(() => {
+    return () => stopNarration();
+  }, []);
+
   useEffect(() => {
     if (audioEnabled && q && !worldComplete && !feedback && currentWorld >= 0) {
-      const timer = setTimeout(() => {
-        narrationRef.current = narrate([{ text: q.questionText, style: 'default' }], apiKey);
-      }, 300);
-      return () => {
-        clearTimeout(timer);
-        stopNarration();
-      };
+      narrationRef.current = narrate([{ text: q.questionText, style: 'default' }], apiKey);
+      if (qIndex + 1 < worldQuestions.length) {
+        preloadAudio(worldQuestions[qIndex + 1].questionText, 'default', apiKey);
+      }
     }
-  }, [qIndex, audioEnabled, q, worldComplete, feedback, currentWorld, apiKey]);
+  }, [qIndex, audioEnabled, q, worldComplete, feedback, currentWorld, apiKey, worldQuestions]);
 
   const startWorld = useCallback((worldId) => {
     // Slice the pre-generated question pool by world index to avoid repeats.
