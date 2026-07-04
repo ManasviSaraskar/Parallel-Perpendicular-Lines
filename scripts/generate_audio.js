@@ -1,14 +1,14 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 
 const API_KEY = process.env.VITE_ELEVENLABS_API_KEY;
 const VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2'; // Alice
+const MODEL_ID = 'eleven_multilingual_v2';
 
 const phrases = [
   // Phase 1 - Wonder
   { text: "John is building a treehouse ladder. He needs the rungs to be evenly spaced, and the side rails to meet the floor at a perfect corner.", style: 'thinking' },
   { text: "How can he check if his ladder is built correctly? Let's find out!", style: 'question' },
-
 
   // Phase 2 - Story Panels
   { text: "Sarah and Yuki walk past the railway station on a sunny morning.", style: 'statement' },
@@ -20,11 +20,11 @@ const phrases = [
   { text: "Set the mirror to a 45-degree angle. That will make the laser bounce off at a perfect 90-degree turn and hit the gem!", style: 'instruction' },
   { text: "Perfect! A 45-degree mirror makes the laser reflect at a right angle and hit the gem!", style: 'celebration' },
   { text: "Not quite! Set the mirror to exactly 45 degrees so the laser reflects at a perfect 90-degree angle onto the gem.", style: 'encouragement' },
-  
+
   { text: "Adjust the new track to be PERFECTLY parallel to the existing bridge so the train can cross!", style: 'instruction' },
   { text: "Awesome! The tracks are parallel and the train is safe!", style: 'celebration' },
   { text: "Not quite parallel! The train will crash if the tracks aren't straight.", style: 'encouragement' },
-  
+
   { text: "Slice the shape PERPENDICULAR to the glowing bottom edge!", style: 'instruction' },
   { text: "Ninja slice! Perfect perpendicular cut!", style: 'celebration' },
   { text: "Not quite! A perpendicular cut needs to be exactly straight up and down here.", style: 'encouragement' },
@@ -45,18 +45,18 @@ const phrases = [
 ];
 
 const STYLE_SETTINGS = {
-  celebration: { stability: 0.45, similarity_boost: 0.90, style: 0.8 },
-  encouragement: { stability: 0.55, similarity_boost: 0.85, style: 0.6 },
-  question: { stability: 0.60, similarity_boost: 0.80, style: 0.3 },
-  emphasis: { stability: 0.85, similarity_boost: 0.70, style: 0.1 },
-  thinking: { stability: 0.65, similarity_boost: 0.80, style: 0.2 },
-  statement: { stability: 0.75, similarity_boost: 0.75, style: 0.0 },
-  instruction: { stability: 0.80, similarity_boost: 0.75, style: 0.0 },
+  celebration: { stability: 0.12, similarity_boost: 0.45, style: 0.75, use_speaker_boost: true },
+  encouragement: { stability: 0.16, similarity_boost: 0.50, style: 0.65, use_speaker_boost: true },
+  question: { stability: 0.20, similarity_boost: 0.55, style: 0.55, use_speaker_boost: true },
+  emphasis: { stability: 0.16, similarity_boost: 0.50, style: 0.60, use_speaker_boost: true },
+  thinking: { stability: 0.24, similarity_boost: 0.60, style: 0.35, use_speaker_boost: true },
+  statement: { stability: 0.20, similarity_boost: 0.55, style: 0.50, use_speaker_boost: true },
+  instruction: { stability: 0.20, similarity_boost: 0.55, style: 0.50, use_speaker_boost: true },
 };
 
 async function generateAudio() {
   if (!API_KEY) {
-    console.log("No ElevenLabs API key found. Skipping audio generation.");
+    console.log('No ElevenLabs API key found. Skipping audio generation.');
     return;
   }
 
@@ -91,7 +91,7 @@ async function generateAudio() {
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_multilingual_v2',
+          model_id: MODEL_ID,
           voice_settings: STYLE_SETTINGS[style] || STYLE_SETTINGS.statement
         })
       });
@@ -102,9 +102,7 @@ async function generateAudio() {
 
       const buffer = await response.arrayBuffer();
       fs.writeFileSync(filepath, Buffer.from(buffer));
-
-      // Rate limit
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (err) {
       console.error(`Failed to generate ${filename}:`, err);
     }
@@ -112,7 +110,7 @@ async function generateAudio() {
 
   const mapFileContent = `export const audioMap = ${JSON.stringify(audioMap, null, 2)};\n`;
   fs.writeFileSync(path.join(process.cwd(), 'src', 'utils', 'audioMap.js'), mapFileContent);
-  console.log("Audio generation and mapping complete.");
+  console.log('Audio generation and mapping complete.');
 }
 
 generateAudio();

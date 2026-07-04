@@ -8,9 +8,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ElevenLabs API key not configured' });
   }
 
-  const { text, voiceId, voiceSettings, model_id = 'eleven_multilingual_v2' } = req.body || {};
-  if (!text || !voiceId) {
-    return res.status(400).json({ error: 'Missing text or voiceId' });
+  const { text, voiceId = 'Xb7hH8MSUJpSbSDYk0k2', voiceSettings, model_id = 'eleven_multilingual_v2' } = req.body || {};
+  if (!text) {
+    return res.status(400).json({ error: 'Missing text' });
   }
 
   try {
