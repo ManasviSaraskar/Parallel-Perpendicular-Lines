@@ -97,78 +97,82 @@ export function stopNarration() {
  * then fetching from ElevenLabs if needed.
  */
 export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0) {
-  // 1. Check pre-generated audio map first (zero latency)
-  if (audioMap && audioMap[text]) {
-    console.log(`[getAudioUrl] Using pre-generated audio for: "${text}"`);
-    return audioMap[text];
-  }
-
-  // 2. Check in-memory cache for dynamic audio
   const cacheKey = `${text}::${style}`;
+
+  // 1. Check in-memory cache for dynamic audio.
   if (elevenLabsCache.has(cacheKey)) {
     console.log(`[getAudioUrl] Using cached audio for: "${text}"`);
     return elevenLabsCache.get(cacheKey);
   }
 
-  // 3. Fetch from the Vercel proxy first, then fall back to direct ElevenLabs only when a client API key exists.
-  try {
-    const styleSettings = STYLE_SETTINGS[style] || STYLE_SETTINGS.statement;
-    const controller = new AbortController();
-    pendingRequests.set(`${queueId}-${cacheKey}`, controller);
+  const resolvedApiKey = apiKey || import.meta.env.VITE_ELEVENLABS_API_KEY;
 
-    console.log(`[getAudioUrl] Fetching audio for: "${text}"`);
-    let response = await fetch('/api/elevenlabs', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text,
-        voiceId: DEFAULT_VOICE_ID,
-        voiceSettings: styleSettings,
-      }),
-      signal: controller.signal,
-    });
+  // 2. Prefer ElevenLabs when a key is available so PlayPhase uses Alice's voice.
+  if (resolvedApiKey) {
+    try {
+      const styleSettings = STYLE_SETTINGS[style] || STYLE_SETTINGS.statement;
+      const controller = new AbortController();
+      pendingRequests.set(`${queueId}-${cacheKey}`, controller);
 
-    pendingRequests.delete(`${queueId}-${cacheKey}`);
-
-    const isHtmlFallback = (response.headers.get('content-type') || '').includes('text/html');
-    const resolvedApiKey = apiKey || import.meta.env.VITE_ELEVENLABS_API_KEY;
-
-    if ((!response.ok || isHtmlFallback) && resolvedApiKey) {
-      console.warn('[getAudioUrl] Proxy returned an error, retrying directly from ElevenLabs.');
-      response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${DEFAULT_VOICE_ID}`, {
+      console.log(`[getAudioUrl] Fetching ElevenLabs audio for: "${text}"`);
+      let response = await fetch('/api/elevenlabs', {
         method: 'POST',
         headers: {
-          'xi-api-key': resolvedApiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: styleSettings,
+          voiceId: DEFAULT_VOICE_ID,
+          voiceSettings: styleSettings,
         }),
         signal: controller.signal,
       });
-    }
 
-    if (!response.ok || isHtmlFallback) {
-      console.error('[getAudioUrl] Audio request failed:', response.status, response.statusText);
-      return null;
-    }
+      pendingRequests.delete(`${queueId}-${cacheKey}`);
 
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    elevenLabsCache.set(cacheKey, url);
-    console.log(`[getAudioUrl] Successfully fetched and cached audio for: "${text}"`);
-    return url;
-  } catch (e) {
-    // Ignore abort errors - they're expected when navigating away
-    if (e.name !== 'AbortError') {
-      console.error('[useAudio] Audio fetch error:', e);
+      const isHtmlFallback = (response.headers.get('content-type') || '').includes('text/html');
+
+      if ((!response.ok || isHtmlFallback) && resolvedApiKey) {
+        console.warn('[getAudioUrl] Proxy returned an error, retrying directly from ElevenLabs.');
+        response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${DEFAULT_VOICE_ID}`, {
+          method: 'POST',
+          headers: {
+            'xi-api-key': resolvedApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text,
+            model_id: 'eleven_multilingual_v2',
+            voice_settings: styleSettings,
+          }),
+          signal: controller.signal,
+        });
+      }
+
+      if (!response.ok || isHtmlFallback) {
+        console.error('[getAudioUrl] Audio request failed:', response.status, response.statusText);
+      } else {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        elevenLabsCache.set(cacheKey, url);
+        console.log(`[getAudioUrl] Successfully fetched and cached ElevenLabs audio for: "${text}"`);
+        return url;
+      }
+    } catch (e) {
+      // Ignore abort errors - they're expected when navigating away.
+      if (e.name !== 'AbortError') {
+        console.error('[useAudio] Audio fetch error:', e);
+      }
     }
-    return null;
   }
+
+  // 3. Fall back to the pre-generated audio map only if the remote voice request is unavailable.
+  if (audioMap && audioMap[text]) {
+    console.log(`[getAudioUrl] Falling back to pre-generated audio for: "${text}"`);
+    return audioMap[text];
+  }
+
+  return null;
 }
 
 /**
