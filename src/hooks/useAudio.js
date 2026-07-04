@@ -29,24 +29,6 @@ const globalAudio = typeof Audio !== 'undefined' ? new Audio() : null;
 let narrationCompletePromise = Promise.resolve();
 let resolveNarrationComplete = () => {};
 
-function playWithSpeechSynthesis(text) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
-    window.speechSynthesis.speak(utterance);
-  });
-}
-
 // When the global audio element finishes playing, resolve the current completion promise.
   if (globalAudio) {
     globalAudio.onended = () => {
@@ -234,8 +216,7 @@ export async function narrate(segments, apiKey) {
     narrationCompletePromise = new Promise(resolve => resolveNarrationComplete = resolve);
 
     if (!url) {
-      console.warn(`[narrate] No audio URL available for "${text}", falling back to browser speech synthesis.`);
-      await playWithSpeechSynthesis(text);
+      console.warn(`[narrate] No audio URL available for "${text}"; skipping this segment.`);
       resolveNarrationComplete();
       if (currentQueueId !== myQueueId) return;
       if (i < segments.length - 1) {
