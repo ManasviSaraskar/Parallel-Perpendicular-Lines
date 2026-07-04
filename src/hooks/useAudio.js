@@ -91,22 +91,34 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
     return elevenLabsCache.get(cacheKey);
   }
 
-  const resolvedApiKey = apiKey || import.meta.env.VITE_ELEVENLABS_API_KEY;
-  if (!resolvedApiKey) {
-    console.warn("[getAudioUrl] No API Key provided, cannot fetch dynamic audio.");
-    return null;
-  }
-
-  // 3. Fetch from ElevenLabs dynamically
+  // 3. Fetch from the Vercel proxy first, then fall back to direct ElevenLabs only when a client API key exists.
   try {
     const styleSettings = STYLE_SETTINGS[style] || STYLE_SETTINGS.statement;
     const controller = new AbortController();
     pendingRequests.set(`${queueId}-${cacheKey}`, controller);
-    
-    console.log(`[getAudioUrl] Fetching audio from ElevenLabs for: "${text}"`);
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${DEFAULT_VOICE_ID}`,
-      {
+
+    console.log(`[getAudioUrl] Fetching audio for: "${text}"`);
+    let response = await fetch('/api/elevenlabs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        voiceId: DEFAULT_VOICE_ID,
+        voiceSettings: styleSettings,
+      }),
+      signal: controller.signal,
+    });
+
+    pendingRequests.delete(`${queueId}-${cacheKey}`);
+
+    const isHtmlFallback = (response.headers.get('content-type') || '').includes('text/html');
+    const resolvedApiKey = apiKey || import.meta.env.VITE_ELEVENLABS_API_KEY;
+
+    if ((!response.ok || isHtmlFallback) && resolvedApiKey) {
+      console.warn('[getAudioUrl] Proxy returned an error, retrying directly from ElevenLabs.');
+      response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${DEFAULT_VOICE_ID}`, {
         method: 'POST',
         headers: {
           'xi-api-key': resolvedApiKey,
@@ -118,13 +130,11 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
           voice_settings: styleSettings,
         }),
         signal: controller.signal,
-      }
-    );
+      });
+    }
 
-    pendingRequests.delete(`${queueId}-${cacheKey}`);
-
-    if (!response.ok) {
-      console.error("[getAudioUrl] ElevenLabs API error:", response.status, response.statusText);
+    if (!response.ok || isHtmlFallback) {
+      console.error('[getAudioUrl] Audio request failed:', response.status, response.statusText);
       return null;
     }
 
@@ -136,7 +146,7 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
   } catch (e) {
     // Ignore abort errors - they're expected when navigating away
     if (e.name !== 'AbortError') {
-      console.error('[useAudio] ElevenLabs fetch error:', e);
+      console.error('[useAudio] Audio fetch error:', e);
     }
     return null;
   }
