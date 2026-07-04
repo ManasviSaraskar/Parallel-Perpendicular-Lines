@@ -21,5 +21,22 @@ export const audioMap = {
   "Lesson complete! You are a Parallel and Perpendicular Lines Champion!": "/assets/audio/audio_lesson_complete_you_are_a_para_19.mp3",
   "Badge unlocked! You are a Line Explorer!": "/assets/audio/audio_badge_unlocked_you_are_a_line__20.mp3",
   "Badge unlocked! Line Builder! You completed all three stations!": "/assets/audio/audio_badge_unlocked_line_builder_yo_21.mp3",
-  "Badge unlocked! Right Angle Ranger! Your tester skills are excellent!": "/assets/audio/audio_badge_unlocked_right_angle_ran_22.mp3"
+  "Badge unlocked! Right Angle Ranger! Your tester skills are excellent!": "/assets/audio/audio_badge_unlocked_right_angle_ran_22.mp3",
+  "Which pair of lines is PARALLEL?": null,
+  "Which pair of lines is PERPENDICULAR?": null,
+  "Look at these two lines. Are they parallel, perpendicular, intersecting, or neither?": null,
+  "These two lines are parallel. True or False?": null,
+  "These two lines are perpendicular. True or False?": null,
+  "name is looking for a pair of PARALLEL lines. Which object shows this?": null,
+  "name is looking for a pair of PERPENDICULAR lines. Which object shows this?": null,
+  "name uses a tester on the corner. Does it fit exactly?": null,
+  "How many pairs of parallel lines are in this rectangle?": null,
+  "How many pairs of perpendicular lines are in this shape?": null,
+  "Which letter has a pair of PERPENDICULAR lines?": null,
+  "name wants to find a shape with PERPENDICULAR lines. Which one has lines that cross at a perfect 90° corner?": null,
+  "Wonderful! Now let us reflect on what you learned. Teach the mascot!": null,
+  "Excellent! That is correct!": null,
+  "Not quite, but keep trying!": null,
+  "How do you feel about parallel and perpendicular lines now?": null,
+  "You scored number percent! Amazing work today!": null
 };

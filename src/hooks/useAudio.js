@@ -11,15 +11,77 @@ const STYLE_SETTINGS = {
   thinking:     { stability: 0.24, similarity_boost: 0.60, style: 0.35, use_speaker_boost: true },
   statement:    { stability: 0.20, similarity_boost: 0.55, style: 0.50, use_speaker_boost: true },
   instruction:  { stability: 0.20, similarity_boost: 0.55, style: 0.50, use_speaker_boost: true },
+  cheer:        { stability: 0.12, similarity_boost: 0.45, style: 0.75, use_speaker_boost: true },
+  ask:          { stability: 0.20, similarity_boost: 0.55, style: 0.55, use_speaker_boost: true },
   default:      { stability: 0.20, similarity_boost: 0.55, style: 0.50, use_speaker_boost: true },
 };
 
+function normalizeTextForAudio(text = '') {
+  return text
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\b(?:john|mike|sarah|emma|liam|aisha|yuki|carlos|olivia|noah)\b/g, 'name')
+    .replace(/\b\d+\b/g, 'number')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function resolveMappedAudioUrl(text) {
+  if (!audioMap || !text) return null;
+
+  const directEntry = audioMap[text];
+  if (typeof directEntry === 'string' && directEntry.length > 0) {
+    return directEntry;
+  }
+
+  const normalizedInput = normalizeTextForAudio(text);
+  for (const [candidateText, candidateUrl] of Object.entries(audioMap)) {
+    if (typeof candidateUrl === 'string' && candidateUrl.length > 0) {
+      if (normalizeTextForAudio(candidateText) === normalizedInput) {
+        return candidateUrl;
+      }
+    }
+  }
+
+  return null;
+}
+
 const elevenLabsCache = new Map();
+
+function getSpeechRate(style) {
+  return style === 'question' || style === 'ask' ? 0.95 : 1;
+}
+
+function getSpeechPitch(style) {
+  return style === 'celebration' || style === 'cheer' ? 1.08 : 1;
+}
+
+function speakTextFallback(text, style = 'statement') {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      resolve(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = getSpeechRate(style);
+    utterance.pitch = getSpeechPitch(style);
+    utterance.volume = 1;
+    utterance.onend = () => resolve(true);
+    utterance.onerror = () => resolve(false);
+    window.speechSynthesis.speak(utterance);
+  });
+}
 let currentQueueId = 0;
 let pendingRequests = new Map();
 const globalAudio = typeof Audio !== 'undefined' ? new Audio() : null;
 let narrationCompletePromise = Promise.resolve();
 let resolveNarrationComplete = () => {};
+let currentAudio = null;
 
 if (globalAudio) {
   globalAudio.onended = () => resolveNarrationComplete();
@@ -45,6 +107,10 @@ export function stopNarration() {
     globalAudio.src = '';
   }
 
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+
   resolveNarrationComplete();
   narrationCompletePromise = new Promise((resolve) => { resolveNarrationComplete = resolve; });
 }
@@ -58,9 +124,10 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
   const cacheKey = `${text}::${style}`;
   const styleSettings = STYLE_SETTINGS[style] || STYLE_SETTINGS.default;
 
-  if (audioMap && audioMap[text]) {
+  const mappedAudioUrl = resolveMappedAudioUrl(text);
+  if (mappedAudioUrl) {
     console.log(`[getAudioUrl] Using pre-generated ElevenLabs Alice audio for: "${text}"`);
-    return audioMap[text];
+    return mappedAudioUrl;
   }
 
   if (elevenLabsCache.has(cacheKey)) {
@@ -120,7 +187,7 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
  */
 export async function preloadAudio(text, style = 'statement', apiKey) {
   const cacheKey = `${text}::${style}`;
-  if (elevenLabsCache.has(cacheKey) || (audioMap && audioMap[text])) {
+  if (elevenLabsCache.has(cacheKey) || resolveMappedAudioUrl(text)) {
     return;
   }
   await getAudioUrl(text, style, apiKey, -1).catch(() => null);
@@ -134,12 +201,6 @@ export async function narrate(segments, apiKey) {
   await narrationCompletePromise;
   currentQueueId += 1;
   const myQueueId = currentQueueId;
-
-  if (!globalAudio) {
-    console.warn('[narrate] Audio is not supported in this environment.');
-    resolveNarrationComplete();
-    return;
-  }
 
   for (let i = 0; i < segments.length; i += 1) {
     if (currentQueueId !== myQueueId) return;
@@ -155,22 +216,53 @@ export async function narrate(segments, apiKey) {
     narrationCompletePromise = new Promise((resolve) => { resolveNarrationComplete = resolve; });
 
     if (!url) {
-      console.warn(`[narrate] No ElevenLabs Alice audio available for "${text}"; skipping voice playback.`);
-      resolveNarrationComplete();
+      console.warn(`[narrate] No pre-generated audio available for "${text}"; using speech synthesis fallback.`);
+      const usedFallback = await speakTextFallback(text, style);
       if (currentQueueId !== myQueueId) return;
+      if (!usedFallback) {
+        resolveNarrationComplete();
+      } else {
+        resolveNarrationComplete();
+      }
       if (i < segments.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 80));
       }
       continue;
     }
 
+    if (!globalAudio) {
+      console.warn('[narrate] Audio playback is not supported in this environment; using speech synthesis fallback.');
+      const usedFallback = await speakTextFallback(text, style);
+      if (currentQueueId !== myQueueId) return;
+      if (!usedFallback) {
+        resolveNarrationComplete();
+      } else {
+        resolveNarrationComplete();
+      }
+      if (i < segments.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+      continue;
+    }
+
+    currentAudio = globalAudio;
     globalAudio.src = url;
 
     try {
       await globalAudio.play();
     } catch (error) {
-      console.warn('[narrate] Audio playback failed for ElevenLabs Alice audio.', error);
-      resolveNarrationComplete();
+      console.warn('[narrate] Audio playback failed for pre-generated audio.', error);
+      const usedFallback = await speakTextFallback(text, style);
+      if (currentQueueId !== myQueueId) return;
+      if (!usedFallback) {
+        resolveNarrationComplete();
+      } else {
+        resolveNarrationComplete();
+      }
+      if (i < segments.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+      continue;
     }
 
     await narrationCompletePromise;
