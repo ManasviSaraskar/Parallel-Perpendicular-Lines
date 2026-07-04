@@ -33,12 +33,18 @@ function resolveMappedAudioUrl(text) {
 
   const directEntry = audioMap[text];
   if (typeof directEntry === 'string' && directEntry.length > 0) {
+    if (directEntry === '__ALICE_DYNAMIC__') {
+      return null;
+    }
     return directEntry;
   }
 
   const normalizedInput = normalizeTextForAudio(text);
   for (const [candidateText, candidateUrl] of Object.entries(audioMap)) {
     if (typeof candidateUrl === 'string' && candidateUrl.length > 0) {
+      if (candidateUrl === '__ALICE_DYNAMIC__') {
+        continue;
+      }
       if (normalizeTextForAudio(candidateText) === normalizedInput) {
         return candidateUrl;
       }
@@ -126,7 +132,7 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
 
   const mappedAudioUrl = resolveMappedAudioUrl(text);
   if (mappedAudioUrl) {
-    console.log(`[getAudioUrl] Using pre-generated ElevenLabs Alice audio for: "${text}"`);
+    console.log(`[getAudioUrl] Using pre-generated Alice audio for: "${text}"`);
     return mappedAudioUrl;
   }
 
