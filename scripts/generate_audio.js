@@ -17,10 +17,17 @@ const phrases = [
   { text: "Some lines just cross at a slanted corner. Those are intersecting, but not perpendicular, because there is no right angle.", style: 'statement' },
 
   // Phase 3 - Simulation Instructions
-  { text: "Drag a road so it is parallel to Main Street!", style: 'instruction' },
-  { text: "Now build a road that is perpendicular to Main Street!", style: 'instruction' },
-  { text: "Tap all the pairs of lines that are parallel!", style: 'instruction' },
-  { text: "Drag the tester to the corner. Does it fit exactly?", style: 'question' },
+  { text: "Set the mirror to a 45-degree angle. That will make the laser bounce off at a perfect 90-degree turn and hit the gem!", style: 'instruction' },
+  { text: "Perfect! A 45-degree mirror makes the laser reflect at a right angle and hit the gem!", style: 'celebration' },
+  { text: "Not quite! Set the mirror to exactly 45 degrees so the laser reflects at a perfect 90-degree angle onto the gem.", style: 'encouragement' },
+  
+  { text: "Adjust the new track to be PERFECTLY parallel to the existing bridge so the train can cross!", style: 'instruction' },
+  { text: "Awesome! The tracks are parallel and the train is safe!", style: 'celebration' },
+  { text: "Not quite parallel! The train will crash if the tracks aren't straight.", style: 'encouragement' },
+  
+  { text: "Slice the shape PERPENDICULAR to the glowing bottom edge!", style: 'instruction' },
+  { text: "Ninja slice! Perfect perpendicular cut!", style: 'celebration' },
+  { text: "Not quite! A perpendicular cut needs to be exactly straight up and down here.", style: 'encouragement' },
 
   // Phase 4 - Feedback
   { text: "Perfect! That is exactly perpendicular! You are a geometry superstar!", style: 'celebration' },
