@@ -29,6 +29,24 @@ const globalAudio = typeof Audio !== 'undefined' ? new Audio() : null;
 let narrationCompletePromise = Promise.resolve();
 let resolveNarrationComplete = () => {};
 
+function playWithSpeechSynthesis(text) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
 // When the global audio element finishes playing, resolve the current completion promise.
   if (globalAudio) {
     globalAudio.onended = () => {
@@ -64,6 +82,7 @@ export function stopNarration() {
     globalAudio.currentTime = 0;
     globalAudio.src = ""; // Release the audio resource.
   }
+  window.speechSynthesis?.cancel();
   
   // Ensure any pending narration completion promise is resolved to prevent deadlocks.
   resolveNarrationComplete();
@@ -204,7 +223,6 @@ export async function narrate(segments, apiKey) {
     const { text, style } = segments[i];
     const url = await getAudioUrl(text, style, apiKey, myQueueId);
 
-    if (!url) continue; // If URL is null, skip this segment.
     if (currentQueueId !== myQueueId) return; // Cancelled while fetching.
 
     // Eagerly preload the next segment's URL so it's cache-warm.
@@ -212,12 +230,23 @@ export async function narrate(segments, apiKey) {
       preloadAudio(segments[i + 1].text, segments[i + 1].style, apiKey);
     }
 
+    // Set up a new promise for the completion of this narration segment.
+    narrationCompletePromise = new Promise(resolve => resolveNarrationComplete = resolve);
+
+    if (!url) {
+      console.warn(`[narrate] No audio URL available for "${text}", falling back to browser speech synthesis.`);
+      await playWithSpeechSynthesis(text);
+      resolveNarrationComplete();
+      if (currentQueueId !== myQueueId) return;
+      if (i < segments.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 80));
+      }
+      continue;
+    }
+
     // Assign the new audio URL to the single global Audio instance.
     globalAudio.src = url;
     currentAudio = globalAudio; // Keep a reference to the currently playing audio.
-
-    // Set up a new promise for the completion of this narration segment.
-    narrationCompletePromise = new Promise(resolve => resolveNarrationComplete = resolve);
 
     // Play the audio. Handle potential autoplay policy issues gracefully.
     try {
