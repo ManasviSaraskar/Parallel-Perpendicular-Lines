@@ -1,6 +1,7 @@
 import { audioMap } from '../utils/audioMap';
 
 const elevenLabsCache = new Map();
+const DEFAULT_VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2';
 
 const STYLE_SETTINGS = {
   celebration:  { stability: 0.12, similarity_boost: 0.45, style: 0.75, use_speaker_boost: true },
@@ -90,7 +91,8 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
     return elevenLabsCache.get(cacheKey);
   }
 
-  if (!apiKey) {
+  const resolvedApiKey = apiKey || import.meta.env.VITE_ELEVENLABS_API_KEY;
+  if (!resolvedApiKey) {
     console.warn("[getAudioUrl] No API Key provided, cannot fetch dynamic audio.");
     return null;
   }
@@ -103,11 +105,11 @@ export async function getAudioUrl(text, style = 'statement', apiKey, queueId = 0
     
     console.log(`[getAudioUrl] Fetching audio from ElevenLabs for: "${text}"`);
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/Xb7hH8MSUJpSbSDYk0k2`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${DEFAULT_VOICE_ID}`,
       {
         method: 'POST',
         headers: {
-          'xi-api-key': apiKey,
+          'xi-api-key': resolvedApiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
