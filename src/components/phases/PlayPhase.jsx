@@ -73,7 +73,7 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
     setWorldComplete(false); setFeedback(null); setAnswered(false);
     stopNarration();
     if (audioEnabled) {
-      narrationRef.current = narrate([{ text: `Welcome to ${WORLDS[worldId].name}! Let\'s go!`, style: 'celebration' }], apiKey);
+      narrationRef.current = narrate([{ text: "Welcome to the new world! Let's go!", style: 'celebration' }], apiKey);
     } else if (!audioEnabled) {
       console.log("[PlayPhase] Audio disabled, skipping welcome narration.");
     }
@@ -85,7 +85,7 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
     setWorldComplete(true);
     stopNarration();
     if (audioEnabled) {
-      narrationRef.current = narrate([{ text: `${WORLDS[currentWorld].name} complete! You got ${score} out of ${worldQuestions.length}!`, style: 'celebration' }], apiKey);
+      narrationRef.current = narrate([{ text: "World complete! Great job!", style: 'celebration' }], apiKey);
     } else if (!audioEnabled) {
       console.log("[PlayPhase] Audio disabled, skipping world complete narration.");
     }
@@ -129,7 +129,7 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
       setTimeout(() => setXpPopup(null), 1500);
       setFeedback({ type: 'correct', message: ns >= 5 ? `🔥 ${ns} Streak!` : 'Correct! 🎉', sub: q.explanation });
       if (audioEnabled) {
-        narrationRef.current = narrate([{ text: ns >= 5 ? `Amazing! ${ns} in a row!` : 'Correct! Well done!', style: 'celebration' }], apiKey);
+        narrationRef.current = narrate([{ text: ns >= 5 ? "Amazing! Great streak!" : "Correct! Well done!", style: 'celebration' }], apiKey);
       } else if (!audioEnabled) {
         console.log("[PlayPhase] Audio disabled, skipping correct answer narration.");
       }

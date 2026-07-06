@@ -1,6 +1,5 @@
 import { shuffleArray } from '../utils/shuffle';
 
-const names = ['John', 'Mike', 'Sarah', 'Emma', 'Liam', 'Aisha', 'Yuki', 'Carlos', 'Olivia', 'Noah'];
 const objects = ['railway tracks', 'ladder rungs', 'football/soccer goalposts', 'window panes', 'staircases', 'kite strings', 'road crossings', 'bridge beams', 'book pages', 'tic-tac-toe grids', 'fence rails', 'laptop screens', 'picture frames'];
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -96,7 +95,7 @@ function genQ4(id, diff) {
 
 // Q5: Real-world object match
 function genQ5(id, diff) {
-  const name = pick(names);
+  const name = 'A student';
   const correct = 'ladder rungs';
   const wrongOptions = ['a crossroad', 'a plus sign', 'a corner of a room'];
   return {
@@ -115,7 +114,7 @@ function genQ5(id, diff) {
 // Q6: Right-angle tester check
 function genQ6(id, diff) {
   const isPerp = Math.random() > 0.5;
-  const name = pick(names);
+  const name = 'A builder';
   return {
     id, type: 'right_angle_check', difficulty: diff, world: 0,
     relationship: isPerp ? 'perpendicular' : 'intersecting',
@@ -177,7 +176,7 @@ function genQ9(id, diff) {
 
 // Q10: Real-world perpendicular match (replaces buggy complete_grid)
 function genQ10(id, diff) {
-  const name = pick(names);
+  const name = 'Our friend';
   const correct = 'A plus sign (+)';
   const wrongOptions = ['Railway tracks', 'Ski slopes', 'Parallel bars'];
   return {

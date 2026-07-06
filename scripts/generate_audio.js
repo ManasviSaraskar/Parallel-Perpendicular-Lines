@@ -1,4 +1,4 @@
-﻿import fs from 'fs';
+import fs from 'fs';
 import path from 'path';
 
 const API_KEY = process.env.VITE_ELEVENLABS_API_KEY;
@@ -42,6 +42,32 @@ const phrases = [
   { text: "Badge unlocked! You are a Line Explorer!", style: 'celebration' },
   { text: "Badge unlocked! Line Builder! You completed all three stations!", style: 'celebration' },
   { text: "Badge unlocked! Right Angle Ranger! Your tester skills are excellent!", style: 'celebration' },
+
+  // Question Bank
+  { text: "Which pair of lines is PARALLEL?", style: 'question' },
+  { text: "Which pair of lines is PERPENDICULAR?", style: 'question' },
+  { text: "Look at these two lines. Are they parallel, perpendicular, intersecting, or neither?", style: 'question' },
+  { text: "\"These two lines are parallel.\" True or False?", style: 'question' },
+  { text: "\"These two lines are perpendicular.\" True or False?", style: 'question' },
+  { text: "A student is looking for a pair of PARALLEL lines. Which object shows this?", style: 'question' },
+  { text: "A builder uses a tester on the corner. Does it fit exactly?", style: 'question' },
+  { text: "How many pairs of parallel lines are in this rectangle?", style: 'question' },
+  { text: "How many pairs of perpendicular lines are in this shape?", style: 'question' },
+  { text: "Which letter has a pair of PERPENDICULAR lines?", style: 'question' },
+  { text: "Our friend wants to find a shape with PERPENDICULAR lines. Which one has lines that cross at a perfect 90° corner?", style: 'question' },
+
+  // PlayPhase
+  { text: "Welcome to the new world! Let's go!", style: 'celebration' },
+  { text: "World complete! Great job!", style: 'celebration' },
+  { text: "Amazing! Great streak!", style: 'celebration' },
+  { text: "Correct! Well done!", style: 'celebration' },
+
+  // ReflectPhase
+  { text: "Wonderful! Now let us reflect on what you learned. Teach the mascot!", style: 'statement' },
+  { text: "Excellent! That is correct!", style: 'celebration' },
+  { text: "Not quite, but keep trying!", style: 'encouragement' },
+  { text: "How do you feel about parallel and perpendicular lines now?", style: 'question' },
+  { text: "You completed the challenge! Amazing work today!", style: 'celebration' },
 ];
 
 const STYLE_SETTINGS = {

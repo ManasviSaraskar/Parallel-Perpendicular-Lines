@@ -81,7 +81,7 @@ export default function ReflectPhase({ stats, onRestart, onGoHome, audioEnabled,
     setConfidence(idx);
     setShowConfetti(true);
     stopNarration();
-    if (audioEnabled) narrationRef.current = narrate([{ text: `You scored ${pct} percent! Amazing work today!`, style: 'cheer' }], apiKey);
+    if (audioEnabled) narrationRef.current = narrate([{ text: "You completed the challenge! Amazing work today!", style: 'cheer' }], apiKey);
     setTimeout(() => setStep(2), 1000);
   }, [audioEnabled, pct, apiKey]);
 
