@@ -1,4 +1,4 @@
-﻿import { audioMap } from '../utils/audioMap';
+import { audioMap } from '../utils/audioMap';
 
 const DEFAULT_VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2';
 const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
@@ -66,20 +66,8 @@ function getSpeechPitch(style) {
 
 function speakTextFallback(text, style = 'statement') {
   return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      resolve(false);
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = getSpeechRate(style);
-    utterance.pitch = getSpeechPitch(style);
-    utterance.volume = 1;
-    utterance.onend = () => resolve(true);
-    utterance.onerror = () => resolve(false);
-    window.speechSynthesis.speak(utterance);
+    // Fallback TTS disabled as requested (only Alice's voice should be used)
+    resolve(false);
   });
 }
 let currentQueueId = 0;
