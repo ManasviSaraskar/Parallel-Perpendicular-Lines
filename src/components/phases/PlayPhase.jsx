@@ -144,7 +144,7 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
         console.log("[PlayPhase] Audio disabled, skipping incorrect answer narration.");
       }
       if (lives - 1 <= 0) setTimeout(finishWorld, 2000);
-      else setTimeout(advance, 2000);
+      else setTimeout(() => { setFeedback(null); setAnswered(false); }, 2000);
     }
   }, [streak, q, advance, lives, finishWorld, audioEnabled, apiKey]);
 
