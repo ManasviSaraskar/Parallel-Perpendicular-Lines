@@ -45,6 +45,7 @@ export default function WonderPhase({ onComplete, audioEnabled, apiKey }) {
           think(
             'John is building a treehouse ladder. He needs the rungs to be evenly spaced, and the side rails to meet the floor at a perfect corner.'
           ),
+          { text: "How can he check if his ladder is built correctly? Let's find out!", style: 'question' }
         ],
         apiKey
       );

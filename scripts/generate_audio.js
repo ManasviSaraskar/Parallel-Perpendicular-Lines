@@ -68,6 +68,14 @@ const phrases = [
   { text: "Not quite, but keep trying!", style: 'encouragement' },
   { text: "How do you feel about parallel and perpendicular lines now?", style: 'question' },
   { text: "You completed the challenge! Amazing work today!", style: 'celebration' },
+
+  // Intro Screen
+  { text: "Hello! Today we are going to explore Parallel and Perpendicular Lines!", style: 'cheer' },
+
+  // Reflect Phase Questions
+  { text: "Two roads run side by side and never cross. What type of lines are they?", style: 'question' },
+  { text: "What makes two lines 'perpendicular'?", style: 'question' },
+  { text: "The sides of a window frame — what geometry do they show?", style: 'question' },
 ];
 
 const STYLE_SETTINGS = {

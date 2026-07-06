@@ -41,10 +41,15 @@ export default function ReflectPhase({ stats, onRestart, onGoHome, audioEnabled,
 
   useEffect(() => {
     if (step === 0 && audioEnabled) {
-      narrationRef.current = narrate([{ text: "Wonderful! Now let us reflect on what you learned. Teach the mascot!", style: 'default' }], apiKey);
+      const rq = REFLECT_QUESTIONS[teachIdx];
+      const segments = [];
+      if (teachIdx === 0) {
+        segments.push({ text: "Wonderful! Now let us reflect on what you learned. Teach the mascot!", style: 'default' });
+      }
+      segments.push({ text: rq.q, style: 'question' });
+      narrationRef.current = narrate(segments, apiKey);
     }
-    return () => { stopNarration(); };
-  }, [step, audioEnabled, apiKey]);
+  }, [step, teachIdx, audioEnabled, apiKey]);
 
   useEffect(() => {
     if (showConfetti) {

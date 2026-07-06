@@ -41,5 +41,9 @@ export const audioMap = {
   "Excellent! That is correct!": "/assets/audio/audio_excellent_that_is_correct__39.mp3",
   "Not quite, but keep trying!": "/assets/audio/audio_not_quite_but_keep_trying__40.mp3",
   "How do you feel about parallel and perpendicular lines now?": "/assets/audio/audio_how_do_you_feel_about_parallel_41.mp3",
-  "You completed the challenge! Amazing work today!": "/assets/audio/audio_you_completed_the_challenge_am_42.mp3"
+  "You completed the challenge! Amazing work today!": "/assets/audio/audio_you_completed_the_challenge_am_42.mp3",
+  "Hello! Today we are going to explore Parallel and Perpendicular Lines!": "/assets/audio/audio_hello_today_we_are_going_to_ex_43.mp3",
+  "Two roads run side by side and never cross. What type of lines are they?": "/assets/audio/audio_two_roads_run_side_by_side_and_44.mp3",
+  "What makes two lines 'perpendicular'?": "/assets/audio/audio_what_makes_two_lines_perpendic_45.mp3",
+  "The sides of a window frame — what geometry do they show?": "/assets/audio/audio_the_sides_of_a_window_frame_wh_46.mp3"
 };

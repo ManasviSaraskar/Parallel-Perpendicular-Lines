@@ -53,7 +53,13 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
   useEffect(() => {
     if (audioEnabled && q && !worldComplete && !feedback && currentWorld >= 0) {
       stopNarration();
-      narrationRef.current = narrate([{ text: q.questionText, style: 'statement' }], apiKey);
+      const segments = [];
+      if (qIndex === 0) {
+        segments.push({ text: "Welcome to the new world! Let's go!", style: 'celebration' });
+      }
+      segments.push({ text: q.questionText, style: 'statement' });
+      
+      narrationRef.current = narrate(segments, apiKey);
       if (qIndex + 1 < worldQuestions.length) {
         preloadAudio(worldQuestions[qIndex + 1].questionText, 'statement', apiKey);
       }
@@ -72,11 +78,6 @@ export default function PlayPhase({ onComplete, audioEnabled, apiKey }) {
     setQIndex(0); setScore(0); setLives(3); setStreak(0);
     setWorldComplete(false); setFeedback(null); setAnswered(false);
     stopNarration();
-    if (audioEnabled) {
-      narrationRef.current = narrate([{ text: "Welcome to the new world! Let's go!", style: 'celebration' }], apiKey);
-    } else if (!audioEnabled) {
-      console.log("[PlayPhase] Audio disabled, skipping welcome narration.");
-    }
   }, [audioEnabled, apiKey]);
 
   const finishWorld = useCallback(() => {
